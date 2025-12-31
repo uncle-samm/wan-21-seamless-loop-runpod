@@ -1,0 +1,200 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 918713283459505,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "lcm",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": ["54", 0],
+      "positive": ["59", 0],
+      "negative": ["59", 1],
+      "latent_image": ["59", 2]
+    },
+    "class_type": "KSampler"
+  },
+  "6": {
+    "inputs": {
+      "text": ["130", 0],
+      "clip": ["58", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "7": {
+    "inputs": {
+      "text": "色调艳丽，过曝，静态，细节模糊不清... blurry, mouth moving, talking, teeth visible...",
+      "clip": ["58", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "38": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "39": {
+    "inputs": { "vae_name": "wan_2.1_vae.safetensors" },
+    "class_type": "VAELoader"
+  },
+  "49": {
+    "inputs": { "clip_name": "clip_vision_h.safetensors" },
+    "class_type": "CLIPVisionLoader"
+  },
+  "51": {
+    "inputs": {
+      "crop": "none",
+      "clip_vision": ["49", 0],
+      "image": ["52", 0]
+    },
+    "class_type": "CLIPVisionEncode"
+  },
+  "52": {
+    "inputs": { "image": "sitChar.png" },
+    "class_type": "LoadImage"
+  },
+  "54": {
+    "inputs": {
+      "shift": 8.0,
+      "model": ["58", 0]
+    },
+    "class_type": "ModelSamplingSD3"
+  },
+  "55": {
+    "inputs": {
+      "unet_name": "https://huggingface.co/city96/Wan2.1-I2V-14B-480P-gguf/resolve/main/wan2.1-i2v-14b-480p-Q3_K_S.gguf"
+    },
+    "class_type": "UnetLoaderGGUF"
+  },
+  "58": {
+    "inputs": {
+      "model": ["55", 0],
+      "clip": ["38", 0],
+      "lora_1": "birdmanstyleanimationwanlora.safetensors",
+      "strength_1": 1.0,
+      "lora_2": "Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors",
+      "strength_2": 1.0
+    },
+    "class_type": "Power Lora Loader (rgthree)"
+  },
+  "59": {
+    "inputs": {
+      "length": 21,
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "vae": ["39", 0],
+      "start_image": ["93", 0],
+      "end_image": ["103", 0],
+      "clip_vision_output": ["51", 0],
+      "width": ["93", 1],
+      "height": ["93", 2]
+    },
+    "class_type": "WanImageToVideo_F2"
+  },
+  "61": {
+    "inputs": {
+      "tile_size": ["77", 0],
+      "overlap": 64,
+      "temporal_size": ["75", 0],
+      "temporal_overlap": 8,
+      "samples": ["3", 0],
+      "vae": ["39", 0]
+    },
+    "class_type": "VAEDecodeTiled"
+  },
+  "68": {
+    "inputs": { "images": ["61", 0] },
+    "class_type": "ImageListToImageBatch"
+  },
+  "69": {
+    "inputs": {
+      "batch_index": 0,
+      "length": ["76", 0],
+      "image": ["68", 0]
+    },
+    "class_type": "ImageFromBatch"
+  },
+  "70": {
+    "inputs": { "images": ["69", 0] },
+    "class_type": "ImageListToImageBatch"
+  },
+  "74": {
+    "inputs": { "value": 21 },
+    "class_type": "PrimitiveInt"
+  },
+  "75": {
+    "inputs": {
+      "expression": "a + 7",
+      "a": ["74", 0]
+    },
+    "class_type": "MathExpression|pysssss"
+  },
+  "76": {
+    "inputs": {
+      "expression": "a - 1",
+      "a": ["74", 0]
+    },
+    "class_type": "MathExpression|pysssss"
+  },
+  "77": {
+    "inputs": { "expression": "192" },
+    "class_type": "MathExpression|pysssss"
+  },
+  "93": {
+    "inputs": {
+      "width": 480,
+      "height": 832,
+      "interpolation": "nearest",
+      "method": "keep proportion",
+      "condition": "if bigger area",
+      "multiple_of": 0,
+      "image": ["52", 0]
+    },
+    "class_type": "ImageResize+"
+  },
+  "102": {
+    "inputs": { "image": "sitChar.png" },
+    "class_type": "LoadImage"
+  },
+  "103": {
+    "inputs": {
+      "width": 480,
+      "height": 832,
+      "interpolation": "nearest",
+      "method": "keep proportion",
+      "condition": "if bigger area",
+      "multiple_of": 0,
+      "image": ["102", 0]
+    },
+    "class_type": "ImageResize+"
+  },
+  "116": {
+    "inputs": { "String": "Your Gemini Prompt Here" },
+    "class_type": "String"
+  },
+  "126": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "fps": 12,
+      "lossless": true,
+      "quality": 80,
+      "method": "default",
+      "images": ["70", 0]
+    },
+    "class_type": "SaveAnimatedWEBP"
+  },
+  "130": {
+    "inputs": {
+      "string_a": "",
+      "string_b": ["131", 0]
+    },
+    "class_type": "ConcatStringSingle"
+  },
+  "131": {
+    "inputs": { "String": "" },
+    "class_type": "String"
+  }
+}
