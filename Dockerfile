@@ -35,7 +35,8 @@ RUN git clone https://github.com/city96/ComfyUI-GGUF.git && \
     cd ComfyUI-GGUF && uv pip install --system -r requirements.txt
 
 # ComfyUI-WanStartEndFramesNative (for start/end frame conditioning)
-RUN git clone https://github.com/Flow-two/ComfyUI-WanStartEndFramesNative.git
+# Using LunarECL's fix branch for clear_cache bug fix
+RUN git clone -b fix/clear_cache-problem https://github.com/LunarECL/ComfyUI-WanStartEndFramesNative.git
 
 # ComfyUI-Impact-Pack
 RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack.git && \
@@ -63,7 +64,7 @@ RUN uv pip install --system \
     pillow \
     websocket-client
 
-# Download models (these layers are cached and won't rebuild when code changes)
+# Download models
 WORKDIR /workspace/ComfyUI/models
 
 # GGUF Model (WAN 2.1 I2V 14B Q3_K_S - smallest for 24GB VRAM)
@@ -97,8 +98,9 @@ RUN wget -O loras/WAN2.1/birdmanstyleanimationwanlora.safetensors \
 RUN wget -O loras/Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors \
     "https://civitai.com/api/download/models/1909719?type=Model&format=SafeTensor"
 
-# Copy handler and workflow (AFTER downloads so code changes don't trigger re-download)
 WORKDIR /workspace
+
+# Copy handler and workflow (at the end for faster rebuilds)
 COPY src/handler.py /workspace/handler.py
 COPY src/workflow_api.json /workspace/workflow_api.json
 

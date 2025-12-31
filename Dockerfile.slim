@@ -1,0 +1,10 @@
+# Use pre-built base image with all models (for fast iteration)
+FROM ghcr.io/uncle-samm/wan21-seamless-loop-base:latest
+
+# Copy handler and workflow (this is the only layer that changes during development)
+WORKDIR /workspace
+COPY src/handler.py /workspace/handler.py
+COPY src/workflow_api.json /workspace/workflow_api.json
+
+# Set up entry point
+CMD ["python", "-u", "/workspace/handler.py"]
