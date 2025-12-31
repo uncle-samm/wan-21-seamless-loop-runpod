@@ -2,18 +2,18 @@
 RunPod Serverless Handler for WAN 2.1 Seamless Loop Animation Generation
 """
 
-import os
-import sys
-import json
 import base64
+import json
+import os
 import random
+import subprocess
+import sys
+import threading
 import time
 import uuid
-import subprocess
-import threading
-import requests
 from io import BytesIO
 
+import requests
 import runpod
 
 # Configuration
@@ -28,10 +28,17 @@ def start_comfyui():
     """Start ComfyUI server in the background."""
     print("Starting ComfyUI server...")
     process = subprocess.Popen(
-        [sys.executable, "main.py", "--listen", "127.0.0.1", "--port", str(COMFYUI_PORT)],
+        [
+            sys.executable,
+            "main.py",
+            "--listen",
+            "127.0.0.1",
+            "--port",
+            str(COMFYUI_PORT),
+        ],
         cwd=COMFYUI_PATH,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT
+        stderr=subprocess.STDOUT,
     )
 
     # Wait for server to be ready
@@ -39,7 +46,9 @@ def start_comfyui():
     start_time = time.time()
     while time.time() - start_time < max_wait:
         try:
-            response = requests.get(f"http://127.0.0.1:{COMFYUI_PORT}/system_stats", timeout=2)
+            response = requests.get(
+                f"http://127.0.0.1:{COMFYUI_PORT}/system_stats", timeout=2
+            )
             if response.status_code == 200:
                 print("ComfyUI server is ready!")
                 return process
@@ -107,7 +116,9 @@ def modify_workflow(workflow: dict, params: dict) -> dict:
     workflow["126"]["inputs"]["fps"] = fps
 
     # Set unique filename prefix to avoid conflicts
-    workflow["126"]["inputs"]["filename_prefix"] = f"seamless_loop_{uuid.uuid4().hex[:8]}"
+    workflow["126"]["inputs"]["filename_prefix"] = (
+        f"seamless_loop_{uuid.uuid4().hex[:8]}"
+    )
 
     return workflow
 
@@ -115,12 +126,21 @@ def modify_workflow(workflow: dict, params: dict) -> dict:
 def queue_prompt(workflow: dict) -> str:
     """Queue a prompt to ComfyUI and return the prompt ID."""
     payload = {"prompt": workflow}
-    response = requests.post(
-        f"http://127.0.0.1:{COMFYUI_PORT}/prompt",
-        json=payload
-    )
-    response.raise_for_status()
-    return response.json()["prompt_id"]
+    response = requests.post(f"http://127.0.0.1:{COMFYUI_PORT}/prompt", json=payload)
+    result = response.json()
+
+    # Check for errors in the response
+    if "error" in result:
+        print(f"ComfyUI error: {result['error']}")
+        if "node_errors" in result:
+            print(f"Node errors: {json.dumps(result['node_errors'], indent=2)}")
+        raise RuntimeError(f"ComfyUI rejected prompt: {result['error']}")
+
+    if "prompt_id" not in result:
+        print(f"Unexpected response: {result}")
+        raise RuntimeError(f"No prompt_id in response: {result}")
+
+    return result["prompt_id"]
 
 
 def wait_for_completion(prompt_id: str, timeout: int = 600) -> dict:
@@ -129,7 +149,9 @@ def wait_for_completion(prompt_id: str, timeout: int = 600) -> dict:
 
     while time.time() - start_time < timeout:
         try:
-            response = requests.get(f"http://127.0.0.1:{COMFYUI_PORT}/history/{prompt_id}")
+            response = requests.get(
+                f"http://127.0.0.1:{COMFYUI_PORT}/history/{prompt_id}"
+            )
             if response.status_code == 200:
                 history = response.json()
                 if prompt_id in history:
@@ -143,10 +165,25 @@ def wait_for_completion(prompt_id: str, timeout: int = 600) -> dict:
 
 def get_output_file(history: dict) -> str:
     """Extract the output file path from history."""
+    print(f"History keys: {history.keys()}")
+    print(f"Full history: {json.dumps(history, indent=2, default=str)}")
+
+    # Check for execution errors
+    if "status" in history:
+        status = history["status"]
+        if status.get("status_str") == "error":
+            error_msg = status.get("messages", [])
+            print(f"Execution error: {error_msg}")
+            raise RuntimeError(f"ComfyUI execution failed: {error_msg}")
+
     outputs = history.get("outputs", {})
+    print(f"Outputs: {outputs}")
 
     # Look for SaveAnimatedWEBP output (node 126)
     for node_id, node_output in outputs.items():
+        print(
+            f"Node {node_id} output keys: {node_output.keys() if isinstance(node_output, dict) else node_output}"
+        )
         if "gifs" in node_output:
             for gif_info in node_output["gifs"]:
                 filename = gif_info.get("filename")
@@ -210,7 +247,7 @@ def handler(job):
             "prompt": job_input.get("prompt", ""),
             "seed": seed,
             "frame_count": job_input.get("frame_count", 21),
-            "fps": job_input.get("fps", 12)
+            "fps": job_input.get("fps", 12),
         }
 
         # Load and modify workflow
@@ -239,14 +276,12 @@ def handler(job):
         except OSError:
             pass
 
-        return {
-            "video": video_base64,
-            "seed": seed
-        }
+        return {"video": video_base64, "seed": seed}
 
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         return {"error": str(e)}
 
