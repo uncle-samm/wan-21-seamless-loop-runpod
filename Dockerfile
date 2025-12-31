@@ -63,7 +63,7 @@ RUN uv pip install --system \
     pillow \
     websocket-client
 
-# Download models
+# Download models (these layers are cached and won't rebuild when code changes)
 WORKDIR /workspace/ComfyUI/models
 
 # GGUF Model (WAN 2.1 I2V 14B Q3_K_S - smallest for 24GB VRAM)
@@ -97,7 +97,7 @@ RUN wget -O loras/WAN2.1/birdmanstyleanimationwanlora.safetensors \
 RUN wget -O loras/Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors \
     "https://civitai.com/api/download/models/1909719?type=Model&format=SafeTensor"
 
-# Copy handler and workflow
+# Copy handler and workflow (AFTER downloads so code changes don't trigger re-download)
 WORKDIR /workspace
 COPY src/handler.py /workspace/handler.py
 COPY src/workflow_api.json /workspace/workflow_api.json
