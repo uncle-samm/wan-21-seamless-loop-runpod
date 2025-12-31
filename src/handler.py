@@ -179,15 +179,23 @@ def get_output_file(history: dict) -> str:
     outputs = history.get("outputs", {})
     print(f"Outputs: {outputs}")
 
-    # Look for SaveAnimatedWEBP output (node 126)
+    # Look for SaveAnimatedWEBP output (node 126) - can be in "gifs" or "images"
     for node_id, node_output in outputs.items():
         print(
             f"Node {node_id} output keys: {node_output.keys() if isinstance(node_output, dict) else node_output}"
         )
+        # Try "gifs" first (animated output)
         if "gifs" in node_output:
             for gif_info in node_output["gifs"]:
                 filename = gif_info.get("filename")
                 subfolder = gif_info.get("subfolder", "")
+                if filename:
+                    return os.path.join(OUTPUT_DIR, subfolder, filename)
+        # Try "images" as fallback
+        if "images" in node_output:
+            for img_info in node_output["images"]:
+                filename = img_info.get("filename")
+                subfolder = img_info.get("subfolder", "")
                 if filename:
                     return os.path.join(OUTPUT_DIR, subfolder, filename)
 
